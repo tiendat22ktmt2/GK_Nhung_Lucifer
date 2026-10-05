@@ -4,6 +4,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "driver/gpio.h"
 #include "driver/i2c_master.h"
 #include "esp_log.h"
 #include "esp_rom_sys.h"
@@ -22,8 +23,11 @@
 static const char *TAG = "LCD";
 static i2c_master_dev_handle_t s_dev;
 
-/* ---------------- Muc thap ---------------- */
-static void expander_write(uint8_t data)
+/* ---------------- Muc thap ----------------
+ * Bo static -> doi ten co tien to lcd_ de khong trung ten symbol
+ * (dac biet "send" trung voi send() cua lwip).
+ */
+void lcd_expander_write(uint8_t data)
 {
     uint8_t b = data | LCD_BL;
     esp_err_t err = i2c_master_transmit(s_dev, &b, 1, 100);
@@ -38,24 +42,24 @@ static void expander_write(uint8_t data)
 }
 
 /* Ghi DATA truoc, sau do moi xung EN (giong thu vien Arduino) */
-static void write4bits(uint8_t value)
+void lcd_write4bits(uint8_t value)
 {
-    expander_write(value);
-    expander_write(value | LCD_EN);
+    lcd_expander_write(value);
+    lcd_expander_write(value | LCD_EN);
     esp_rom_delay_us(1);
-    expander_write(value & ~LCD_EN);
+    lcd_expander_write(value & ~LCD_EN);
     esp_rom_delay_us(50);
 }
 
-static void send(uint8_t value, uint8_t mode)
+void lcd_send(uint8_t value, uint8_t mode)
 {
-    write4bits((value & 0xF0) | mode);
-    write4bits(((uint8_t)(value << 4) & 0xF0) | mode);
+    lcd_write4bits((value & 0xF0) | mode);
+    lcd_write4bits(((uint8_t)(value << 4) & 0xF0) | mode);
 }
 
-static void cmd(uint8_t c)
+void lcd_cmd(uint8_t c)
 {
-    send(c, 0);
+    lcd_send(c, 0);
 }
 
 /* ---------------- API ---------------- */
@@ -98,28 +102,28 @@ esp_err_t lcd_init(void)
 
     /* Khoi tao giong thu vien Arduino LiquidCrystal_I2C */
     vTaskDelay(pdMS_TO_TICKS(50));
-    expander_write(0);
+    lcd_expander_write(0);
     vTaskDelay(pdMS_TO_TICKS(1000));
 
-    write4bits(0x30);
+    lcd_write4bits(0x30);
     esp_rom_delay_us(4500);
-    write4bits(0x30);
+    lcd_write4bits(0x30);
     esp_rom_delay_us(4500);
-    write4bits(0x30);
+    lcd_write4bits(0x30);
     esp_rom_delay_us(150);
-    write4bits(0x20);               /* 4-bit mode */
+    lcd_write4bits(0x20);           /* 4-bit mode */
 
-    cmd(0x28);                      /* 2 dong, font 5x8 */
-    cmd(0x0C);                      /* display ON, cursor OFF */
+    lcd_cmd(0x28);                  /* 2 dong, font 5x8 */
+    lcd_cmd(0x0C);                  /* display ON, cursor OFF */
     lcd_clear();
-    cmd(0x06);                      /* entry mode */
+    lcd_cmd(0x06);                  /* entry mode */
 
     return ESP_OK;
 }
 
 void lcd_clear(void)
 {
-    cmd(0x01);
+    lcd_cmd(0x01);
     esp_rom_delay_us(2000);
 }
 
@@ -127,12 +131,12 @@ void lcd_print_line(uint8_t row, const char *text)
 {
     int i = 0;
 
-    cmd(0x80 | (row ? 0x40 : 0x00));
+    lcd_cmd(0x80 | (row ? 0x40 : 0x00));
 
     for (; i < 16 && text[i]; i++) {
-        send((uint8_t)text[i], LCD_RS);
+        lcd_send((uint8_t)text[i], LCD_RS);
     }
     for (; i < 16; i++) {
-        send(' ', LCD_RS);
+        lcd_send(' ', LCD_RS);
     }
 }

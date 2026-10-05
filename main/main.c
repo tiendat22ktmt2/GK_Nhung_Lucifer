@@ -43,7 +43,7 @@ static QueueHandle_t    light_queue;
 static QueueSetHandle_t sensor_set;
 
 /* ---------------- Tasks ---------------- */
-static void dht_task(void *arg)
+void dht_task(void *arg)
 {
     TickType_t last_wake = xTaskGetTickCount();
     dht_data_t d;
@@ -65,7 +65,7 @@ static void dht_task(void *arg)
     }
 }
 
-static void light_task(void *arg)
+void light_task(void *arg)
 {
     TickType_t last_wake = xTaskGetTickCount();
     light_data_t d;
@@ -81,7 +81,7 @@ static void light_task(void *arg)
     }
 }
 
-static void lcd_task(void *arg)
+void lcd_task(void *arg)
 {
     dht_data_t   dht_d   = {0};
     light_data_t light_d = {0};

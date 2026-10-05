@@ -19,7 +19,7 @@
 static portMUX_TYPE s_mux = portMUX_INITIALIZER_UNLOCKED;
 
 /* Cho trong luc chan con o muc `level`. Tra ve so us, hoac -1 neu timeout. */
-static int wait_while_level(int level, int timeout_us)
+int wait_while_level(int level, int timeout_us)
 {
     int64_t start = esp_timer_get_time();
 
